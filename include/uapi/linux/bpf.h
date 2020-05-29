@@ -136,6 +136,8 @@ enum bpf_map_type {
 	BPF_MAP_TYPE_STACK,
 	BPF_MAP_TYPE_SK_STORAGE,
 	BPF_MAP_TYPE_DEVMAP_HASH,
+	/* BPF_MAP_TYPE_STRUCT_OPS occupies ID 26 upstream. */
+	BPF_MAP_TYPE_RINGBUF = 27,
 };
 
 /* Note that tracing related programs such as
@@ -2760,6 +2762,40 @@ union bpf_attr {
  * 		See: clock_gettime(CLOCK_BOOTTIME)
  * 	Return
  * 		Current *ktime*.
+ *
+ * void *bpf_ringbuf_output(void *ringbuf, void *data, u64 size, u64 flags)
+ *  Description
+ *   Copy *size* bytes from *data* into a ring buffer *ringbuf*.
+ *   BPF_RB_NO_WAKEUP suppresses poll notifications; BPF_RB_FORCE_WAKEUP
+ *   sends one unconditionally.
+ *  Return
+ *   0 on success, a negative error code on failure.
+ *
+ * void *bpf_ringbuf_reserve(void *ringbuf, u64 size, u64 flags)
+ *  Description
+ *   Reserve *size* bytes of payload in *ringbuf*.
+ *  Return
+ *   A pointer to the reserved bytes, or NULL if reservation fails.
+ *
+ * void bpf_ringbuf_submit(void *data, u64 flags)
+ *  Description
+ *   Submit a reserved sample. The wakeup flags control poll notifications.
+ *  Return
+ *   Nothing.
+ *
+ * void bpf_ringbuf_discard(void *data, u64 flags)
+ *  Description
+ *   Discard a reserved sample. The wakeup flags control poll notifications.
+ *  Return
+ *   Nothing.
+ *
+ * u64 bpf_ringbuf_query(void *ringbuf, u64 selector)
+ *  Description
+ *   Query available data, ring size, consumer position, or producer position
+ *   with BPF_RB_AVAIL_DATA, BPF_RB_RING_SIZE, BPF_RB_CONS_POS, or
+ *   BPF_RB_PROD_POS. Results are instantaneous snapshots.
+ *  Return
+ *   The selected value, or 0 for an unknown selector.
  */
 #define __BPF_FUNC_MAPPER(FN)		\
 	FN(unspec),			\
@@ -2887,7 +2923,12 @@ union bpf_attr {
 	FN(get_netns_cookie),		\
 	FN(get_current_ancestor_cgroup_id),	\
 	FN(sk_assign),			\
-	FN(ktime_get_boot_ns),
+	FN(ktime_get_boot_ns),		\
+	FN(ringbuf_output),		\
+	FN(ringbuf_reserve),		\
+	FN(ringbuf_submit),		\
+	FN(ringbuf_discard),		\
+	FN(ringbuf_query),
 
 /* integer value in 'imm' field of BPF_CALL instruction selects which helper
  * function eBPF program intends to call
@@ -2945,6 +2986,25 @@ enum bpf_func_id {
 
 /* Current network namespace */
 #define BPF_F_CURRENT_NETNS		(-1L)
+
+/* BPF ring buffer wakeup control and query selectors. */
+enum {
+	BPF_RB_NO_WAKEUP = (1ULL << 0),
+	BPF_RB_FORCE_WAKEUP = (1ULL << 1),
+};
+
+enum {
+	BPF_RB_AVAIL_DATA = 0,
+	BPF_RB_RING_SIZE = 1,
+	BPF_RB_CONS_POS = 2,
+	BPF_RB_PROD_POS = 3,
+};
+
+enum {
+	BPF_RINGBUF_BUSY_BIT = (1U << 31),
+	BPF_RINGBUF_DISCARD_BIT = (1U << 30),
+	BPF_RINGBUF_HDR_SZ = 8,
+};
 
 /* BPF_FUNC_skb_adjust_room flags. */
 #define BPF_F_ADJ_ROOM_FIXED_GSO	(1ULL << 0)
