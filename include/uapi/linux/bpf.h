@@ -2763,7 +2763,7 @@ union bpf_attr {
  * 	Return
  * 		Current *ktime*.
  *
- * void *bpf_ringbuf_output(void *ringbuf, void *data, u64 size, u64 flags)
+ * long bpf_ringbuf_output(void *ringbuf, void *data, u64 size, u64 flags)
  *  Description
  *   Copy *size* bytes from *data* into a ring buffer *ringbuf*.
  *   BPF_RB_NO_WAKEUP suppresses poll notifications; BPF_RB_FORCE_WAKEUP
