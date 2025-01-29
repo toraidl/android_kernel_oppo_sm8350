@@ -101,7 +101,7 @@ struct bpf_map {
 	char name[BPF_OBJ_NAME_LEN];
 	bool unpriv_array;
 	bool frozen; /* write-once; write-protected by freeze_mutex */
-	/* 22 bytes hole */
+	/* cacheline padding */
 
 	/* The 3rd and 4th cacheline with misc members to avoid false sharing
 	 * particularly with refcounting.
