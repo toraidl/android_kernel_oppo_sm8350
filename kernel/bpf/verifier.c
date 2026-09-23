@@ -2878,10 +2878,32 @@ static int check_ptr_to_btf_access(struct bpf_verifier_env *env,
 				   int value_regno)
 {
 	struct bpf_reg_state *reg = regs + regno;
-	const struct btf_type *t = btf_type_by_id(btf_vmlinux, reg->btf_id);
-	const char *tname = btf_name_by_offset(btf_vmlinux, t->name_off);
+	const struct btf_type *t;
+	const char *tname;
 	u32 btf_id;
 	int ret;
+
+	if (!btf_vmlinux || IS_ERR(btf_vmlinux)) {
+		verbose(env, "in-kernel BTF is unavailable\n");
+		return -EOPNOTSUPP;
+	}
+
+	if (IS_ENABLED(CONFIG_ARM64)) {
+		verbose(env,
+			"BTF pointer dereference requires fault-safe ARM64 BPF loads\n");
+		return -EOPNOTSUPP;
+	}
+
+	t = btf_type_by_id(btf_vmlinux, reg->btf_id);
+	if (!t) {
+		verbose(env, "invalid BTF type id %u\n", reg->btf_id);
+		return -EINVAL;
+	}
+	tname = btf_name_by_offset(btf_vmlinux, t->name_off);
+	if (!tname) {
+		verbose(env, "invalid BTF type name for id %u\n", reg->btf_id);
+		return -EINVAL;
+	}
 
 	if (atype != BPF_READ) {
 		verbose(env, "only read is supported\n");
