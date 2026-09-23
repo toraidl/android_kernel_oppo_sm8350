@@ -2932,7 +2932,12 @@ union bpf_attr {
 	FN(ringbuf_reserve),		\
 	FN(ringbuf_submit),		\
 	FN(ringbuf_discard),		\
-	FN(ringbuf_query),
+	FN(ringbuf_query),		\
+	/* 5.10 helper-ID compatibility aliases; preserve existing 5.4 IDs. */ \
+	FN(ringbuf_reserve_5_10),	\
+	FN(ringbuf_submit_5_10),	\
+	FN(ringbuf_discard_5_10),	\
+	FN(ringbuf_query_5_10),
 
 /* integer value in 'imm' field of BPF_CALL instruction selects which helper
  * function eBPF program intends to call

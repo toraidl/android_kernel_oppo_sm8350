@@ -709,12 +709,16 @@ tracing_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 	case BPF_FUNC_ringbuf_output:
 		return &bpf_ringbuf_output_proto;
 	case BPF_FUNC_ringbuf_reserve:
+	case BPF_FUNC_ringbuf_reserve_5_10:
 		return &bpf_ringbuf_reserve_proto;
 	case BPF_FUNC_ringbuf_submit:
+	case BPF_FUNC_ringbuf_submit_5_10:
 		return &bpf_ringbuf_submit_proto;
 	case BPF_FUNC_ringbuf_discard:
+	case BPF_FUNC_ringbuf_discard_5_10:
 		return &bpf_ringbuf_discard_proto;
 	case BPF_FUNC_ringbuf_query:
+	case BPF_FUNC_ringbuf_query_5_10:
 		return &bpf_ringbuf_query_proto;
 	case BPF_FUNC_tail_call:
 		return &bpf_tail_call_proto;
