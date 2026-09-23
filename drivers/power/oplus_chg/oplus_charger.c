@@ -1016,16 +1016,14 @@ static bool is_batt_ocm_available(struct oplus_chg_chip *dev)
 }
 #endif /* CONFIG_OPLUS_CHG_GKI_SUPPORT */
 
-#ifdef OPLUS_CHG_OP_DEF
-static bool oplus_chg_is_wls_online(struct oplus_chg_chip *dev)
+bool oplus_chg_is_wls_online(struct oplus_chg_chip *dev)
 {
 	union oplus_chg_mod_propval pval;
 	int rc;
 
-	if (!is_wls_ocm_available(dev)) {
-		// pr_err("wls ocm not found\n");
+	if (!dev || !is_wls_ocm_available(dev))
 		return false;
-	}
+
 	rc = oplus_chg_mod_get_property(dev->wls_ocm, OPLUS_CHG_PROP_ONLINE, &pval);
 	if (rc < 0)
 		return false;
@@ -1033,15 +1031,14 @@ static bool oplus_chg_is_wls_online(struct oplus_chg_chip *dev)
 	return !!pval.intval;
 }
 
-static bool oplus_chg_is_wls_present(struct oplus_chg_chip *dev)
+bool oplus_chg_is_wls_present(struct oplus_chg_chip *dev)
 {
 	union oplus_chg_mod_propval pval;
 	int rc;
 
-	if (!is_wls_ocm_available(dev)) {
-		// pr_err("wls ocm not found\n");
+	if (!dev || !is_wls_ocm_available(dev))
 		return false;
-	}
+
 	rc = oplus_chg_mod_get_property(dev->wls_ocm, OPLUS_CHG_PROP_PRESENT, &pval);
 	if (rc < 0)
 		return false;
@@ -1049,6 +1046,7 @@ static bool oplus_chg_is_wls_present(struct oplus_chg_chip *dev)
 	return !!pval.intval;
 }
 
+#ifdef OPLUS_CHG_OP_DEF
 static enum oplus_chg_wls_type oplus_chg_get_wls_charge_type(struct oplus_chg_chip *dev)
 {
 	union oplus_chg_mod_propval val;

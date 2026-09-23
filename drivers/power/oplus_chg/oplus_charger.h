@@ -1160,4 +1160,6 @@ void oplus_check_ovp_status(struct oplus_chg_chip *chg);
 
 void oplus_chg_get_aging_ffc_offset(struct oplus_chg_chip *chip, int *ffc1_offset, int *ffc2_offset);
 
+bool oplus_chg_is_wls_present(struct oplus_chg_chip *chip);
+bool oplus_chg_is_wls_online(struct oplus_chg_chip *chip);
 #endif /*_OPLUS_CHARGER_H_*/
