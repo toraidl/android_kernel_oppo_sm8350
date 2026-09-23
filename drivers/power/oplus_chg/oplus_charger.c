@@ -64,6 +64,8 @@
 #endif
 
 #include "oplus_charger.h"
+#include "oplus_chg_wls.h"
+#include "oplus_wireless.h"
 #include "oplus_gauge.h"
 #include "oplus_warp.h"
 #include "oplus_short.h"
@@ -9652,3 +9654,119 @@ int oplus_chg_match_temp_for_chging(void)
 	return chging_temp;
 }
 
+
+int oplus_get_adapter_power(void)
+{
+	int power = 0;
+	bool vooc_online = false;
+	bool wls_online = false;
+	int fast_chg_type = 0;
+	struct oplus_chg_chip *chip = g_charger_chip;
+	struct oplus_chg_wls *wls_dev = NULL;
+
+	if (!chip) {
+		pr_err("oplus_get_adapter_power: g_charger_chip is NULL\n");
+		return 0;
+	}
+	wls_online = oplus_wpc_get_online_status() ||
+		oplus_chg_is_wls_online(chip) ||
+		oplus_chg_is_wls_present(chip);
+	if (wls_online && chip->wls_ocm)
+		wls_dev = oplus_chg_mod_get_drvdata(chip->wls_ocm);
+	if ((oplus_warp_get_fastchg_started() == true) ||
+		(oplus_warp_get_fastchg_to_normal() == true) ||
+		(oplus_warp_get_fastchg_to_warm() == true) ||
+		(oplus_warp_get_fastchg_dummy_started() == true)) {
+		vooc_online = true;
+	}
+	if (wls_online) {
+		if (wls_dev)
+			power = oplus_chg_wls_get_max_wireless_power(wls_dev);
+		else
+			power = 0;
+	} else if (vooc_online) {
+		fast_chg_type = oplus_warp_get_fast_chg_type();
+		power = oplus_get_warp_adapter_power(fast_chg_type) * 1000;
+		pr_info("oplus_get_adapter_power: VOOC fast_chg_type = %d, power = %d\n", fast_chg_type, power);
+	} else {
+		switch (chip->charger_type) {
+		case POWER_SUPPLY_TYPE_USB_DCP:
+			if (chip->chg_ops && chip->chg_ops->get_charger_subtype) {
+				int charger_subtype = chip->chg_ops->get_charger_subtype();
+
+				if (charger_subtype == CHARGER_SUBTYPE_QC ||
+				    charger_subtype == CHARGER_SUBTYPE_PD) {
+					power = 18000;
+					pr_info("oplus_get_adapter_power: QC/PD DCP detected, power = %d\n", power);
+				} else {
+					power = 10000;
+					pr_info("oplus_get_adapter_power: Normal DCP detected, power = %d\n", power);
+				}
+			} else {
+				power = 10000;
+				pr_info("oplus_get_adapter_power: charger subtype unavailable, power = %d\n", power);
+			}
+			break;
+		case POWER_SUPPLY_TYPE_USB:
+			power = 2500;
+			pr_info("oplus_get_adapter_power: USB detected, power = %d\n", power);
+			break;
+		case POWER_SUPPLY_TYPE_USB_CDP:
+			power = 7500;
+			pr_info("oplus_get_adapter_power: CDP detected, power = %d\n", power);
+			break;
+		default:
+			pr_info("oplus_get_adapter_power: Unknown charger type, power = %d\n", power);
+			break;
+		}
+	}
+
+	return power;
+}
+
+
+static int warp_project_to_power_mw[INVALID_WARP_PROJECT] = {
+	[NO_VOOC] = 0,
+	[VOOC] = 0,
+	[DUAL_BATT_50W] = 50000,
+	[DUAL_BATT_65W] = 65000,
+	[SINGLE_BATT_50W] = 50000,
+	[VOOCPHY_33W] = 33000,
+	[VOOCPHY_60W] = 60000,
+	[DUAL_BATT_80W] = 80000,
+	[DUAL_BATT_100W] = 100000,
+	[DUAL_BATT_150W] = 150000,
+	[POWER_BANK_66W] = 66000,
+	[POWER_BANK_67W] = 67000,
+	[POWER_BANK_120W] = 120000,
+	[POWER_BANK_44W] = 44000,
+	[DUAL_BATT_240W] = 240000,
+	[POWER_BANK_200W] = 200000,
+	[POWER_BANK_88W] = 88000,
+	[POWER_BANK_55W] = 55000,
+	[POWER_BANK_125W] = 125000,
+	[POWER_BANK_45W] = 45000
+};
+int oplus_get_project_power(void)
+{
+	int i;
+	int warp_project = 0;
+	int project_max_power_mw = 0;
+	struct oplus_chg_chip *chip = g_charger_chip;
+
+	if (!chip) {
+		chg_err(": oplus_chip not ready!\n");
+		return 0;
+	}
+
+	warp_project = oplus_is_warp_project();
+	if (warp_project >= NO_VOOC && warp_project < INVALID_WARP_PROJECT)
+		project_max_power_mw = warp_project_to_power_mw[warp_project];
+
+	for (i = 0; i < CHG_PROTOCOL_MAX; i++) {
+		if (chip->protocol_prio_table[i].max_power_mw > project_max_power_mw)
+			project_max_power_mw = chip->protocol_prio_table[i].max_power_mw;
+	}
+
+	return project_max_power_mw;
+}
