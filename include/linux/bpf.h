@@ -23,6 +23,7 @@ struct sock;
 struct seq_file;
 struct btf;
 struct btf_type;
+struct poll_table_struct;
 
 extern struct idr btf_idr;
 extern spinlock_t btf_idr_lock;
