@@ -27,7 +27,7 @@
 	"                        post_bind4 | post_bind6 | connect4 |\n"       \
 	"                        connect6 | sendmsg4 | sendmsg6 |\n"           \
 	"                        recvmsg4 | recvmsg6 | sysctl |\n"	       \
-	"                        getsockopt | setsockopt }"
+	"                        getsockopt | setsockopt | sock_release }"
 
 static unsigned int query_flags;
 
@@ -50,20 +50,21 @@ static const char * const attach_type_strings[] = {
 	[BPF_CGROUP_UDP6_RECVMSG] = "recvmsg6",
 	[BPF_CGROUP_GETSOCKOPT] = "getsockopt",
 	[BPF_CGROUP_SETSOCKOPT] = "setsockopt",
-	[__MAX_BPF_ATTACH_TYPE] = NULL,
+	[BPF_CGROUP_INET_SOCK_RELEASE] = "sock_release",
+	[BPF_ATTACH_TYPE_MAX] = NULL,
 };
 
 static enum bpf_attach_type parse_attach_type(const char *str)
 {
 	enum bpf_attach_type type;
 
-	for (type = 0; type < __MAX_BPF_ATTACH_TYPE; type++) {
+	for (type = 0; type < BPF_ATTACH_TYPE_MAX; type++) {
 		if (attach_type_strings[type] &&
 		    is_prefix(str, attach_type_strings[type]))
 			return type;
 	}
 
-	return __MAX_BPF_ATTACH_TYPE;
+	return BPF_ATTACH_TYPE_MAX;
 }
 
 static int show_bpf_prog(int id, const char *attach_type_str,
@@ -122,7 +123,7 @@ static int cgroup_has_attached_progs(int cgroup_fd)
 	enum bpf_attach_type type;
 	bool no_prog = true;
 
-	for (type = 0; type < __MAX_BPF_ATTACH_TYPE; type++) {
+	for (type = 0; type < BPF_ATTACH_TYPE_MAX; type++) {
 		int count = count_attached_bpf_progs(cgroup_fd, type);
 
 		if (count < 0 && errno != EINVAL)
@@ -228,7 +229,7 @@ static int do_show(int argc, char **argv)
 		printf("%-8s %-15s %-15s %-15s\n", "ID", "AttachType",
 		       "AttachFlags", "Name");
 
-	for (type = 0; type < __MAX_BPF_ATTACH_TYPE; type++) {
+	for (type = 0; type < BPF_ATTACH_TYPE_MAX; type++) {
 		/*
 		 * Not all attach types may be supported, so it's expected,
 		 * that some requests will fail.
@@ -291,7 +292,7 @@ static int do_show_tree_fn(const char *fpath, const struct stat *sb,
 		printf("%s\n", fpath);
 	}
 
-	for (type = 0; type < __MAX_BPF_ATTACH_TYPE; type++)
+	for (type = 0; type < BPF_ATTACH_TYPE_MAX; type++)
 		show_attached_bpf_progs(cgroup_fd, type, ftw->level);
 
 	if (errno == EINVAL)
@@ -413,7 +414,7 @@ static int do_attach(int argc, char **argv)
 	}
 
 	attach_type = parse_attach_type(argv[1]);
-	if (attach_type == __MAX_BPF_ATTACH_TYPE) {
+	if (attach_type == BPF_ATTACH_TYPE_MAX) {
 		p_err("invalid attach type");
 		goto exit_cgroup;
 	}
@@ -471,7 +472,7 @@ static int do_detach(int argc, char **argv)
 	}
 
 	attach_type = parse_attach_type(argv[1]);
-	if (attach_type == __MAX_BPF_ATTACH_TYPE) {
+	if (attach_type == BPF_ATTACH_TYPE_MAX) {
 		p_err("invalid attach type");
 		goto exit_cgroup;
 	}

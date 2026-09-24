@@ -23,6 +23,71 @@ struct ctl_table_header;
 
 #ifdef CONFIG_CGROUP_BPF
 
+/*
+ * UAPI attach types are sparse and include non-cgroup hooks. Keep an
+ * internal, dense index for the per-cgroup arrays so newer UAPI values do
+ * not grow struct cgroup.
+ */
+enum cgroup_bpf_attach_type {
+	CGROUP_BPF_ATTACH_TYPE_INVALID = -1,
+	CGROUP_INET_INGRESS = 0,
+	CGROUP_INET_EGRESS,
+	CGROUP_INET_SOCK_CREATE,
+	CGROUP_SOCK_OPS,
+	CGROUP_DEVICE,
+	CGROUP_INET4_BIND,
+	CGROUP_INET6_BIND,
+	CGROUP_INET4_CONNECT,
+	CGROUP_INET6_CONNECT,
+	CGROUP_INET4_POST_BIND,
+	CGROUP_INET6_POST_BIND,
+	CGROUP_UDP4_SENDMSG,
+	CGROUP_UDP6_SENDMSG,
+	CGROUP_SYSCTL,
+	CGROUP_UDP4_RECVMSG,
+	CGROUP_UDP6_RECVMSG,
+	CGROUP_GETSOCKOPT,
+	CGROUP_SETSOCKOPT,
+	CGROUP_INET_SOCK_RELEASE,
+	MAX_CGROUP_BPF_ATTACH_TYPE
+};
+
+#define CGROUP_ATYPE(type) \
+	case BPF_##type: return type
+
+static inline enum cgroup_bpf_attach_type
+to_cgroup_bpf_attach_type(enum bpf_attach_type attach_type)
+{
+	switch ((int)attach_type) {
+	CGROUP_ATYPE(CGROUP_INET_INGRESS);
+	CGROUP_ATYPE(CGROUP_INET_EGRESS);
+	CGROUP_ATYPE(CGROUP_INET_SOCK_CREATE);
+	CGROUP_ATYPE(CGROUP_SOCK_OPS);
+	CGROUP_ATYPE(CGROUP_DEVICE);
+	CGROUP_ATYPE(CGROUP_INET4_BIND);
+	CGROUP_ATYPE(CGROUP_INET6_BIND);
+	CGROUP_ATYPE(CGROUP_INET4_CONNECT);
+	CGROUP_ATYPE(CGROUP_INET6_CONNECT);
+	CGROUP_ATYPE(CGROUP_INET4_POST_BIND);
+	CGROUP_ATYPE(CGROUP_INET6_POST_BIND);
+	CGROUP_ATYPE(CGROUP_UDP4_SENDMSG);
+	CGROUP_ATYPE(CGROUP_UDP6_SENDMSG);
+	CGROUP_ATYPE(CGROUP_SYSCTL);
+	CGROUP_ATYPE(CGROUP_UDP4_RECVMSG);
+	CGROUP_ATYPE(CGROUP_UDP6_RECVMSG);
+	CGROUP_ATYPE(CGROUP_GETSOCKOPT);
+	CGROUP_ATYPE(CGROUP_SETSOCKOPT);
+	CGROUP_ATYPE(CGROUP_INET_SOCK_RELEASE);
+	default:
+		return CGROUP_BPF_ATTACH_TYPE_INVALID;
+	}
+}
+
+#undef CGROUP_ATYPE
+
+/* Preserve the original 5.4 struct cgroup_bpf array dimensions and CRC. */
+#define CGROUP_BPF_ATTACH_TYPE_CAPACITY __MAX_BPF_ATTACH_TYPE
+
 extern struct static_key_false cgroup_bpf_enabled_key;
 #define cgroup_bpf_enabled static_branch_unlikely(&cgroup_bpf_enabled_key)
 
@@ -61,15 +126,15 @@ struct bpf_prog_array;
 
 struct cgroup_bpf {
 	/* array of effective progs in this cgroup */
-	struct bpf_prog_array __rcu *effective[MAX_BPF_ATTACH_TYPE];
+	struct bpf_prog_array __rcu *effective[CGROUP_BPF_ATTACH_TYPE_CAPACITY];
 
 	/* attached progs to this cgroup and attach flags
 	 * when flags == 0 or BPF_F_ALLOW_OVERRIDE the progs list will
 	 * have either zero or one element
 	 * when BPF_F_ALLOW_MULTI the list can have up to BPF_CGROUP_MAX_PROGS
 	 */
-	struct list_head progs[MAX_BPF_ATTACH_TYPE];
-	u32 flags[MAX_BPF_ATTACH_TYPE];
+	struct list_head progs[CGROUP_BPF_ATTACH_TYPE_CAPACITY];
+	u32 flags[CGROUP_BPF_ATTACH_TYPE_CAPACITY];
 
 	/* temp storage for effective prog array used by prog_attach/detach */
 	struct bpf_prog_array *inactive;

@@ -201,10 +201,16 @@ enum bpf_attach_type {
 	BPF_CGROUP_UDP6_RECVMSG,
 	BPF_CGROUP_GETSOCKOPT,
 	BPF_CGROUP_SETSOCKOPT,
-	/* Keep the 5.10 UAPI value; intervening attach types are not backported. */
-	BPF_CGROUP_INET_SOCK_RELEASE = 34,
 	__MAX_BPF_ATTACH_TYPE
 };
+
+/*
+ * Keep the enum members stable for modversioned in-kernel interfaces. This
+ * attach type was added upstream at a sparse UAPI value, so expose it as a
+ * constant.
+ */
+#define BPF_CGROUP_INET_SOCK_RELEASE ((enum bpf_attach_type)34)
+#define BPF_ATTACH_TYPE_MAX 35
 
 #define MAX_BPF_ATTACH_TYPE __MAX_BPF_ATTACH_TYPE
 

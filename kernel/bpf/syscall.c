@@ -1705,7 +1705,7 @@ bpf_prog_load_check_attach(enum bpf_prog_type prog_type,
 {
 	switch (prog_type) {
 	case BPF_PROG_TYPE_CGROUP_SOCK:
-		switch (expected_attach_type) {
+		switch ((int)expected_attach_type) {
 		case BPF_CGROUP_INET_SOCK_CREATE:
 		case BPF_CGROUP_INET_SOCK_RELEASE:
 		case BPF_CGROUP_INET4_POST_BIND:

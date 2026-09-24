@@ -30,20 +30,20 @@ static const char * const attach_type_strings[] = {
 	[BPF_SK_SKB_STREAM_VERDICT] = "stream_verdict",
 	[BPF_SK_MSG_VERDICT] = "msg_verdict",
 	[BPF_FLOW_DISSECTOR] = "flow_dissector",
-	[__MAX_BPF_ATTACH_TYPE] = NULL,
+	[BPF_ATTACH_TYPE_MAX] = NULL,
 };
 
 static enum bpf_attach_type parse_attach_type(const char *str)
 {
 	enum bpf_attach_type type;
 
-	for (type = 0; type < __MAX_BPF_ATTACH_TYPE; type++) {
+	for (type = 0; type < BPF_ATTACH_TYPE_MAX; type++) {
 		if (attach_type_strings[type] &&
 		    is_prefix(str, attach_type_strings[type]))
 			return type;
 	}
 
-	return __MAX_BPF_ATTACH_TYPE;
+	return BPF_ATTACH_TYPE_MAX;
 }
 
 static void print_boot_time(__u64 nsecs, char *buf, unsigned int size)
@@ -686,7 +686,7 @@ static int parse_attach_detach_args(int argc, char **argv, int *progfd,
 		return *progfd;
 
 	*attach_type = parse_attach_type(*argv);
-	if (*attach_type == __MAX_BPF_ATTACH_TYPE) {
+	if (*attach_type == BPF_ATTACH_TYPE_MAX) {
 		p_err("invalid attach/detach type");
 		return -EINVAL;
 	}
